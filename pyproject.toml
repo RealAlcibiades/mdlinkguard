@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mdlinkguard"
+version = "0.1.0"
+description = "Find broken links, missing files, and bad #anchors in Markdown. CI-friendly."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "RealAlcibiades" }]
+dependencies = ["tomli>=1.1; python_version < '3.11'"]
+keywords = ["markdown", "links", "linter", "documentation", "ci"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Environment :: Console",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+mdlinkguard = "mdlinkguard.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/RealAlcibiades/mdlinkguard"
+Issues = "https://github.com/RealAlcibiades/mdlinkguard/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mdlinkguard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

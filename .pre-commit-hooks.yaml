@@ -1,0 +1,6 @@
+- id: mdlinkguard
+  name: mdlinkguard
+  description: Check Markdown files for broken links and anchors
+  entry: mdlinkguard
+  language: python
+  types: [markdown]

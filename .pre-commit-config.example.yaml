@@ -1,0 +1,6 @@
+# Copy into your project as .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/RealAlcibiades/mdlinkguard
+    rev: v0.1.0
+    hooks:
+      - id: mdlinkguard
