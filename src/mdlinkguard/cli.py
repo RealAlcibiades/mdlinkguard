@@ -25,6 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="cache successful external results in FILE (default .mdlinkguard-cache.json)")
     p.add_argument("--cache-ttl", type=float, metavar="SECONDS", help="cache lifetime (default 86400)")
     p.add_argument("--format", choices=["text", "json", "github", "sarif"], default="text")
+    p.add_argument("--stats", action="store_true", help="print a summary report to stderr")
     p.add_argument("-v", "--verbose", action="store_true", help="also list working links")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return p
@@ -63,4 +64,7 @@ def main(argv: list[str] | None = None) -> int:
             elif args.verbose:
                 print(f"{r.file}:{r.line}: ok {r.target}")
         print(f"{len(results)} links checked, {len(broken)} broken.")
+    if args.stats:
+        from .reporters import stats
+        print(stats(results), file=sys.stderr)
     return 1 if broken else 0

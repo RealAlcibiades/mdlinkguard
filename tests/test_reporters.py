@@ -23,3 +23,9 @@ def test_cli_github_format(tmp_path, capsys, monkeypatch):
     monkeypatch.chdir(tmp_path)
     assert main(["--format", "github"]) == 1
     assert capsys.readouterr().out.startswith("::error file=a.md,line=1")
+
+
+def test_stats():
+    from mdlinkguard.reporters import stats
+    s = stats(R)
+    assert "2 links in 2 files, 1 broken" in s and "file not found" in s and "inline=2" in s
