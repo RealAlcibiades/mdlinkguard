@@ -4,6 +4,14 @@ All notable changes to this project will be documented here. The format follows 
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-21
+
+### Added
+- Reusable composite GitHub Action. Add `uses: RealAlcibiades/mdlinkguard@v0.6.0` to a workflow and broken links appear as inline PR annotations. Inputs: `paths`, `external`, `args`, `python-version`.
+- Documentation: `docs/configuration.md` (every option), `docs/ci.md` (Action, SARIF upload, nightly cached external checks), `docs/troubleshooting.md`.
+- README badges, a usage gallery, and an FAQ.
+- `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue templates, and a pull request template.
+
 ## [0.5.0] - 2026-10-21
 
 ### Added
