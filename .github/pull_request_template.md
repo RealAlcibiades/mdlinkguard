@@ -1,0 +1,3 @@
+- [ ] Tests added or updated (`pytest` passes offline)
+- [ ] `mdlinkguard .` passes on the repo's own docs
+- [ ] Entry added under "Unreleased" in `CHANGELOG.md`

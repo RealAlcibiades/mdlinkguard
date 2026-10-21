@@ -1,14 +1,20 @@
 # mdlinkguard
 
+[![License: MIT](https://img.shields.io/github/license/RealAlcibiades/mdlinkguard)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+[![Release](https://img.shields.io/github/v/release/RealAlcibiades/mdlinkguard)](https://github.com/RealAlcibiades/mdlinkguard/releases)
+
 Find broken links in your Markdown before your readers do.
 
 `mdlinkguard` scans Markdown files and folders and reports:
 
 - **Missing files**: relative links such as `[guide](docs/guide.md)` or images that point nowhere
 - **Bad anchors**: `#heading` fragments that don't match any heading, using GitHub-style slugs, duplicate-heading suffixes, and `<a id>` tags
-- **Dead URLs** (optional): concurrent HTTP(S) checks with timeouts and retries
+- **Dead URLs** (optional): concurrent HTTP(S) checks with timeouts, retries, per-host rate limits, and an on-disk cache
+- **Redirects** (optional): external links that moved, so you can update them
+- **Typos**: broken anchors come with a "did you mean" suggestion
 
-It understands inline links, images, reference-style links, and autolinks, and it skips anything inside code blocks or inline code. The only dependency is the standard library (plus `tomli` on Python < 3.11).
+It understands inline links, images, reference-style links, autolinks, and HTML `<a href>` / `<img src>` tags, and it skips anything inside code blocks or inline code. The only dependency is the standard library (plus `tomli` on Python < 3.11).
 
 ## Install
 
@@ -23,6 +29,11 @@ mdlinkguard                      # scan the current directory
 mdlinkguard README.md docs/      # specific files or folders
 mdlinkguard --external           # also check http(s) links
 mdlinkguard --format json        # machine-readable output
+mdlinkguard --format github      # inline annotations on pull requests
+mdlinkguard --format sarif > links.sarif   # GitHub code scanning
+mdlinkguard -e --cache --rate-limit 2      # fast, polite repeat runs
+mdlinkguard --watch docs/        # re-check as you edit
+mdlinkguard --stats              # summary by kind, reason, and file
 mdlinkguard -i '^https://localhost' -x 'node_modules/*'
 ```
 
@@ -47,7 +58,14 @@ README.md:5: BROKEN docs/guide.md#missing (missing anchor #missing)
 | `--timeout SECS` | HTTP timeout (default 10) |
 | `--retries N` | Retries on timeouts, 429 and 5xx (default 2) |
 | `-j, --concurrency N` | Parallel HTTP requests (default 8) |
-| `--format text\|json` | Output format |
+| `--rate-limit RPS` | Max requests per second to any one host |
+| `--cache [FILE]` | Cache successful external results (default `.mdlinkguard-cache.json`) |
+| `--cache-ttl SECS` | Cache lifetime (default 86400) |
+| `--redirects` | Report external links that redirect |
+| `--fail-on-redirect` | Treat redirects as broken |
+| `--format text\|json\|github\|sarif` | Output format |
+| `--stats` | Print a summary report to stderr |
+| `-w, --watch` | Re-check when Markdown files change |
 | `-v, --verbose` | Also list working links |
 
 ## Configuration
@@ -62,11 +80,32 @@ check_external = false
 timeout = 10
 retries = 2
 concurrency = 8
+rate_limit = 0          # requests/second per host, 0 = unlimited
+cache = ".mdlinkguard-cache.json"
+cache_ttl = 86400
+fail_on_redirect = false
+
+[tool.mdlinkguard.host_rate_limits]
+"github.com" = 2
 ```
+
+See [docs/configuration.md](docs/configuration.md) for every option.
 
 ## CI
 
-### GitHub Actions
+### GitHub Action
+
+```yaml
+- uses: actions/checkout@v4
+- uses: RealAlcibiades/mdlinkguard@v0.5.0
+  with:
+    paths: "README.md docs"
+    external: "false"
+```
+
+Broken links show up as annotations on the pull request diff. More recipes are in [docs/ci.md](docs/ci.md).
+
+### Plain pip
 
 ```yaml
 - uses: actions/setup-python@v5
@@ -84,6 +123,14 @@ repos:
     hooks:
       - id: mdlinkguard
 ```
+
+## FAQ
+
+**How is this different from other link checkers?** It is a small, dependency-free Python tool focused on Markdown: it understands GitHub heading slugs and suggests fixes for anchor typos, and it emits GitHub annotations and SARIF directly. Larger tools such as lychee or markdown-link-check cover more formats; pick whatever fits your stack.
+
+**Will it hammer external sites?** External checks are off by default. When enabled, each URL is checked once per run, and you can add `--rate-limit` and `--cache` to stay polite.
+
+**Why is a working link reported as broken?** Some sites block automated HEAD/GET requests. Add the URL to `ignore`. See [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ## License
 
