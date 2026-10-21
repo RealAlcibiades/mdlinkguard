@@ -1,0 +1,39 @@
+name: mdlinkguard
+description: Find broken links, missing files, and bad #anchors in Markdown, with inline PR annotations.
+author: RealAlcibiades
+branding:
+  icon: link
+  color: blue
+inputs:
+  paths:
+    description: Space-separated files or directories to check
+    default: "."
+  external:
+    description: Also check http(s) URLs ("true"/"false")
+    default: "false"
+  args:
+    description: Extra command-line arguments passed to mdlinkguard
+    default: ""
+  python-version:
+    description: Python version to run with
+    default: "3.12"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install mdlinkguard
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}"
+    - name: Check links
+      shell: bash
+      env:
+        MDLG_PATHS: ${{ inputs.paths }}
+        MDLG_EXTERNAL: ${{ inputs.external }}
+        MDLG_ARGS: ${{ inputs.args }}
+      run: |
+        ext=""
+        if [ "$MDLG_EXTERNAL" = "true" ]; then ext="--external"; fi
+        # shellcheck disable=SC2086
+        mdlinkguard --format github --stats $ext $MDLG_ARGS $MDLG_PATHS
