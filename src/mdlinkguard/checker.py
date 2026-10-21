@@ -29,6 +29,7 @@ class Result:
     kind: str
     ok: bool
     reason: str = ""
+    redirect: str = ""  # final URL when an external link redirects
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -84,7 +85,7 @@ def check_local(src: Path, target: str, own_anchors: set[str]) -> str:
     return ""
 
 
-Fetcher = Callable[[str, float], int]
+Fetcher = Callable[[str, float], "int | tuple[int, str]"]
 
 
 def http_status(url: str, timeout: float) -> int:
@@ -93,7 +94,7 @@ def http_status(url: str, timeout: float) -> int:
         req = urllib.request.Request(url, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.status
+                return resp.status, resp.geturl()
         except urllib.error.HTTPError as e:
             if method == "HEAD" and e.code in (403, 405, 501):
                 continue
@@ -102,20 +103,26 @@ def http_status(url: str, timeout: float) -> int:
 
 
 def check_url(url: str, cfg: Config, fetch: Fetcher = http_status) -> str:
+    return check_url_full(url, cfg, fetch)[0]
+
+
+def check_url_full(url: str, cfg: Config, fetch: Fetcher = http_status) -> tuple[str, str]:
+    """Return (reason, final_url). reason is '' when the URL works."""
     last = ""
     for attempt in range(cfg.retries + 1):
         try:
-            code = fetch(url, cfg.timeout)
+            got = fetch(url, cfg.timeout)
+            code, final = got if isinstance(got, tuple) else (got, url)
             if 200 <= code < 400:
-                return ""
+                return "", ("" if final.rstrip("/") == url.rstrip("/") else final)
             last = f"HTTP {code}"
             if code not in (429,) and code < 500:
-                return last
+                return last, ""
         except Exception as e:  # network errors, timeouts
             last = f"{type(e).__name__}: {e}"
         if attempt < cfg.retries:
             time.sleep(min(0.5 * 2**attempt, 4))
-    return last
+    return last, ""
 
 
 def run(paths: list[Path], cfg: Config, fetch: Fetcher = http_status) -> list[Result]:
@@ -144,20 +151,26 @@ def run(paths: list[Path], cfg: Config, fetch: Fetcher = http_status) -> list[Re
     if pending:
         cache = UrlCache(Path(cfg.cache) if cfg.cache else None, cfg.cache_ttl)
         unique = sorted({u for _, u in pending})
-        outcome: dict[str, str] = {}
+        outcome: dict[str, tuple[str, str]] = {}
         todo = []
         for u in unique:
             hit = cache.get(u)
             if hit is None:
                 todo.append(u)
             else:
-                outcome[u] = hit
+                outcome[u] = (hit, "")
         with ThreadPoolExecutor(max_workers=max(1, cfg.concurrency)) as ex:
-            for u, reason in zip(todo, ex.map(lambda u: check_url(u, cfg, fetch), todo)):
-                outcome[u] = reason
-                cache.put(u, reason)
+            for u, res in zip(todo, ex.map(lambda u: check_url_full(u, cfg, fetch), todo)):
+                outcome[u] = res
+                if not res[1]:
+                    cache.put(u, res[0])
         cache.save()
         for idx, url in pending:
-            results[idx].ok = not outcome[url]
-            results[idx].reason = outcome[url]
+            reason, final = outcome[url]
+            results[idx].ok = not reason
+            results[idx].reason = reason
+            results[idx].redirect = final
+            if final and cfg.fail_on_redirect:
+                results[idx].ok = False
+                results[idx].reason = f"redirects to {final}"
     return results

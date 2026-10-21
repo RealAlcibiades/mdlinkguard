@@ -25,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="cache successful external results in FILE (default .mdlinkguard-cache.json)")
     p.add_argument("--cache-ttl", type=float, metavar="SECONDS", help="cache lifetime (default 86400)")
     p.add_argument("--format", choices=["text", "json", "github", "sarif"], default="text")
+    p.add_argument("--redirects", action="store_true", help="report external links that redirect")
+    p.add_argument("--fail-on-redirect", action="store_true", help="treat redirecting links as broken")
     p.add_argument("--stats", action="store_true", help="print a summary report to stderr")
     p.add_argument("-v", "--verbose", action="store_true", help="also list working links")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -36,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
     cfg = load_config(args.config, Path.cwd())
     cfg.ignore = list(cfg.ignore) + args.ignore
     cfg.exclude = list(cfg.exclude) + args.exclude
+    if args.fail_on_redirect:
+        cfg.fail_on_redirect = True
     if args.external:
         cfg.check_external = True
     for name in ("timeout", "retries", "concurrency", "cache", "cache_ttl"):
@@ -61,6 +65,8 @@ def main(argv: list[str] | None = None) -> int:
         for r in results:
             if not r.ok:
                 print(f"{r.file}:{r.line}: BROKEN {r.target} ({r.reason})")
+            elif r.redirect and (args.redirects or args.verbose):
+                print(f"{r.file}:{r.line}: REDIRECT {r.target} -> {r.redirect}")
             elif args.verbose:
                 print(f"{r.file}:{r.line}: ok {r.target}")
         print(f"{len(results)} links checked, {len(broken)} broken.")

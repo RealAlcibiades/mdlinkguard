@@ -21,6 +21,7 @@ class Config:
     concurrency: int = 8
     cache: str | None = None  # path to cache file; None disables
     cache_ttl: float = 86400.0  # seconds
+    fail_on_redirect: bool = False
 
 
 def load_config(path: Path | None, root: Path) -> Config:
