@@ -4,6 +4,12 @@ All notable changes to this project will be documented here. The format follows 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-21
+
+### Added
+- On-disk cache for external URL results with a configurable TTL (`--cache`, `--cache-ttl`, `cache`/`cache_ttl` in config). Only successful checks are cached, so failures are always re-verified.
+- Broken `#anchor` reports now suggest the closest existing heading (e.g. `missing anchor #instalation; did you mean #installation?`).
+
 ## [0.1.0] - 2026-10-21
 
 ### Added

@@ -88,7 +88,7 @@ Fetcher = Callable[[str, float], int]
 
 
 def http_status(url: str, timeout: float) -> int:
-    headers = {"User-Agent": "mdlinkguard/0.1 (+https://github.com/RealAlcibiades/mdlinkguard)"}
+    headers = {"User-Agent": "mdlinkguard/0.2.0 (+https://github.com/RealAlcibiades/mdlinkguard)"}
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(url, method=method, headers=headers)
         try:
