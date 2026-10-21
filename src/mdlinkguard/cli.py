@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--cache", metavar="FILE", nargs="?", const=".mdlinkguard-cache.json",
                    help="cache successful external results in FILE (default .mdlinkguard-cache.json)")
     p.add_argument("--cache-ttl", type=float, metavar="SECONDS", help="cache lifetime (default 86400)")
-    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--format", choices=["text", "json", "github", "sarif"], default="text")
     p.add_argument("-v", "--verbose", action="store_true", help="also list working links")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return p
@@ -47,7 +47,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     results = run(paths, cfg)
     broken = [r for r in results if not r.ok]
-    if args.format == "json":
+    if args.format in ("github", "sarif"):
+        from . import reporters
+        text = getattr(reporters, args.format)(results)
+        if text:
+            print(text)
+    elif args.format == "json":
         json.dump({"checked": len(results), "broken": len(broken),
                    "results": [r.to_dict() for r in (results if args.verbose else broken)]}, sys.stdout, indent=2)
         print()
