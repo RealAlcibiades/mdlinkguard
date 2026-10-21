@@ -4,6 +4,12 @@ All notable changes to this project will be documented here. The format follows 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-21
+
+### Added
+- Per-host rate limiting: `--rate-limit RPS` caps requests per second to any single host, and `[host_rate_limits]` in config sets overrides per domain (subdomains inherit from their parent, so `api.github.com` uses the `github.com` limit).
+- `--watch` / `-w`: re-runs the check whenever a Markdown file is added, removed, or modified. Uses stdlib polling, so it adds no dependencies.
+
 ## [0.4.0] - 2026-10-21
 
 ### Added
