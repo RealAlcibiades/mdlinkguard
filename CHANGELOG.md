@@ -4,6 +4,13 @@ All notable changes to this project will be documented here. The format follows 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+### Added
+- `--format github`: emits GitHub Actions workflow commands so broken links show up as inline annotations on pull requests.
+- `--format sarif`: SARIF 2.1.0 output for GitHub code scanning and other SARIF viewers.
+- `--stats`: prints a summary to stderr (links by kind, top failure reasons, files with the most broken links).
+
 ## [0.2.0] - 2026-10-21
 
 ### Added
