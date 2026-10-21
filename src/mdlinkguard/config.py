@@ -22,6 +22,8 @@ class Config:
     cache: str | None = None  # path to cache file; None disables
     cache_ttl: float = 86400.0  # seconds
     fail_on_redirect: bool = False
+    rate_limit: float = 0.0  # max requests/second per host (0 = unlimited)
+    host_rate_limits: dict = field(default_factory=dict)  # e.g. {"github.com" = 2}
 
 
 def load_config(path: Path | None, root: Path) -> Config:

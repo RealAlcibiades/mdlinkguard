@@ -21,6 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--timeout", type=float, help="HTTP timeout in seconds")
     p.add_argument("--retries", type=int, help="HTTP retries for transient errors")
     p.add_argument("-j", "--concurrency", type=int, help="parallel HTTP requests")
+    p.add_argument("--rate-limit", type=float, metavar="RPS", help="max requests per second to any one host")
     p.add_argument("--cache", metavar="FILE", nargs="?", const=".mdlinkguard-cache.json",
                    help="cache successful external results in FILE (default .mdlinkguard-cache.json)")
     p.add_argument("--cache-ttl", type=float, metavar="SECONDS", help="cache lifetime (default 86400)")
@@ -42,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
         cfg.fail_on_redirect = True
     if args.external:
         cfg.check_external = True
-    for name in ("timeout", "retries", "concurrency", "cache", "cache_ttl"):
+    for name in ("timeout", "retries", "concurrency", "cache", "cache_ttl", "rate_limit"):
         if getattr(args, name) is not None:
             setattr(cfg, name, getattr(args, name))
     paths = [Path(p) for p in args.paths]

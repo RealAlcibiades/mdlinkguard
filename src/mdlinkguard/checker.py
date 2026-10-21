@@ -15,6 +15,7 @@ from urllib.parse import unquote, urlsplit
 
 from .cache import UrlCache
 from .config import Config
+from .ratelimit import HostRateLimiter
 from .parser import Link, parse
 
 MD_SUFFIXES = {".md", ".markdown", ".mdx"}
@@ -106,11 +107,14 @@ def check_url(url: str, cfg: Config, fetch: Fetcher = http_status) -> str:
     return check_url_full(url, cfg, fetch)[0]
 
 
-def check_url_full(url: str, cfg: Config, fetch: Fetcher = http_status) -> tuple[str, str]:
+def check_url_full(url: str, cfg: Config, fetch: Fetcher = http_status,
+                   limiter: HostRateLimiter | None = None) -> tuple[str, str]:
     """Return (reason, final_url). reason is '' when the URL works."""
     last = ""
     for attempt in range(cfg.retries + 1):
         try:
+            if limiter:
+                limiter.wait(url)
             got = fetch(url, cfg.timeout)
             code, final = got if isinstance(got, tuple) else (got, url)
             if 200 <= code < 400:
@@ -159,8 +163,9 @@ def run(paths: list[Path], cfg: Config, fetch: Fetcher = http_status) -> list[Re
                 todo.append(u)
             else:
                 outcome[u] = (hit, "")
+        limiter = HostRateLimiter(cfg.rate_limit, cfg.host_rate_limits)
         with ThreadPoolExecutor(max_workers=max(1, cfg.concurrency)) as ex:
-            for u, res in zip(todo, ex.map(lambda u: check_url_full(u, cfg, fetch), todo)):
+            for u, res in zip(todo, ex.map(lambda u: check_url_full(u, cfg, fetch, limiter), todo)):
                 outcome[u] = res
                 if not res[1]:
                     cache.put(u, res[0])
