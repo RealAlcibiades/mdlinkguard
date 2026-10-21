@@ -123,7 +123,7 @@ def run(paths: list[Path], cfg: Config, fetch: Fetcher = http_status) -> list[Re
     results: list[Result] = []
     pending: list[tuple[int, str]] = []
     for f in find_markdown(paths, cfg.exclude):
-        links, anchors = parse(f.read_text(encoding="utf-8", errors="replace"))
+        links, anchors = parse(f.read_text(encoding="utf-8", errors="replace"), mdx=f.suffix.lower() == ".mdx")
         _anchor_cache[f.resolve()] = anchors
         for link in links:
             t = link.target
