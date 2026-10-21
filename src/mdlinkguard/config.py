@@ -19,6 +19,8 @@ class Config:
     timeout: float = 10.0
     retries: int = 2
     concurrency: int = 8
+    cache: str | None = None  # path to cache file; None disables
+    cache_ttl: float = 86400.0  # seconds
 
 
 def load_config(path: Path | None, root: Path) -> Config:

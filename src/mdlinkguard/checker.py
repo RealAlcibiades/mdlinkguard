@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import unquote, urlsplit
 
+from .cache import UrlCache
 from .config import Config
 from .parser import Link, parse
 
@@ -134,9 +135,21 @@ def run(paths: list[Path], cfg: Config, fetch: Fetcher = http_status) -> list[Re
                 res.ok, res.reason = not reason, reason
             results.append(res)
     if pending:
+        cache = UrlCache(Path(cfg.cache) if cfg.cache else None, cfg.cache_ttl)
         unique = sorted({u for _, u in pending})
+        outcome: dict[str, str] = {}
+        todo = []
+        for u in unique:
+            hit = cache.get(u)
+            if hit is None:
+                todo.append(u)
+            else:
+                outcome[u] = hit
         with ThreadPoolExecutor(max_workers=max(1, cfg.concurrency)) as ex:
-            outcome = dict(zip(unique, ex.map(lambda u: check_url(u, cfg, fetch), unique)))
+            for u, reason in zip(todo, ex.map(lambda u: check_url(u, cfg, fetch), todo)):
+                outcome[u] = reason
+                cache.put(u, reason)
+        cache.save()
         for idx, url in pending:
             results[idx].ok = not outcome[url]
             results[idx].reason = outcome[url]
