@@ -1,6 +1,7 @@
 """Link checking logic."""
 from __future__ import annotations
 
+import difflib
 import fnmatch
 import re
 import time
@@ -61,19 +62,25 @@ def anchors_for(path: Path) -> set[str]:
     return _anchor_cache[key]
 
 
+def suggest(frag: str, anchors: set[str]) -> str:
+    """Return ' (did you mean #x?)' for the closest existing anchor, or ''."""
+    best = difflib.get_close_matches(frag.lower(), sorted(anchors), n=1, cutoff=0.6)
+    return f"; did you mean #{best[0]}?" if best else ""
+
+
 def check_local(src: Path, target: str, own_anchors: set[str]) -> str:
     """Return '' if ok, else a reason string."""
     path_part, _, frag = target.partition("#")
     frag = unquote(frag)
     if not path_part:
-        return "" if frag in own_anchors or frag.lower() in own_anchors else f"missing anchor #{frag}"
+        return "" if frag in own_anchors or frag.lower() in own_anchors else f"missing anchor #{frag}" + suggest(frag, own_anchors)
     rel = unquote(path_part.split("?")[0])
     dest = (src.parent / rel) if not rel.startswith("/") else Path(rel)
     if not dest.exists():
         return "file not found"
     if frag and dest.is_file() and dest.suffix.lower() in MD_SUFFIXES:
         if frag not in anchors_for(dest) and frag.lower() not in anchors_for(dest):
-            return f"missing anchor #{frag}"
+            return f"missing anchor #{frag}" + suggest(frag, anchors_for(dest))
     return ""
 
 
