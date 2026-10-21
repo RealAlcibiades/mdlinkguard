@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 from . import __version__
@@ -28,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--format", choices=["text", "json", "github", "sarif"], default="text")
     p.add_argument("--redirects", action="store_true", help="report external links that redirect")
     p.add_argument("--fail-on-redirect", action="store_true", help="treat redirecting links as broken")
+    p.add_argument("-w", "--watch", action="store_true", help="re-check whenever Markdown files change (Ctrl-C to stop)")
     p.add_argument("--stats", action="store_true", help="print a summary report to stderr")
     p.add_argument("-v", "--verbose", action="store_true", help="also list working links")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -51,7 +53,20 @@ def main(argv: list[str] | None = None) -> int:
     if missing:
         print(f"mdlinkguard: path not found: {missing[0]}", file=sys.stderr)
         return 2
-    results = run(paths, cfg)
+    if args.watch:
+        from .watch import watch
+        def once() -> None:
+            print(f"\n[mdlinkguard] {time.strftime('%H:%M:%S')} checking...", file=sys.stderr)
+            report(args, run(paths, cfg))
+        try:
+            watch(paths, cfg.exclude, once)
+        except KeyboardInterrupt:
+            pass
+        return 0
+    return report(args, run(paths, cfg))
+
+
+def report(args: argparse.Namespace, results: list) -> int:
     broken = [r for r in results if not r.ok]
     if args.format in ("github", "sarif"):
         from . import reporters
