@@ -4,6 +4,16 @@ All notable changes to this project will be documented here. The format follows 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-21
+
+### Added
+- HTML `<a href>` and `<img src>` tags inside Markdown are now checked (code blocks and inline code are still skipped).
+- `.mdx` files: top-level `import`/`export` statements are ignored instead of being scanned for links.
+- Redirect reporting: `--redirects` lists external links that redirect and where they end up; `--fail-on-redirect` treats them as broken. JSON output includes a `redirect` field.
+
+### Changed
+- `http_status` now returns `(status, final_url)`. Custom fetchers may return either an int or that tuple.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added

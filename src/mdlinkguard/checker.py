@@ -89,7 +89,7 @@ Fetcher = Callable[[str, float], "int | tuple[int, str]"]
 
 
 def http_status(url: str, timeout: float) -> int:
-    headers = {"User-Agent": "mdlinkguard/0.3.0 (+https://github.com/RealAlcibiades/mdlinkguard)"}
+    headers = {"User-Agent": "mdlinkguard/0.4.0 (+https://github.com/RealAlcibiades/mdlinkguard)"}
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(url, method=method, headers=headers)
         try:
